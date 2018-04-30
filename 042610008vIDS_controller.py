@@ -48,10 +48,11 @@ HOST = '192.168.0.12'#(ipv4.server's IP)
 PORT = 9876
 ADDR = (HOST,PORT)
 BUFSIZE = 4096
-
+global timestart
+timestart=1
 global datapathv4
 global ddos_buf
-ddos_buf=1000
+ddos_buf=500
 ####for RA START(Step 4) change to each tanent
 str_ipv6_0 = {}
 str_ipv6_0[1] = "fe80::f816:3eff:febe:181f" #vRouter's ipv6 link layer address
@@ -352,8 +353,8 @@ C = [ [21,23,24,21,1],#IP1 for VM_1
 
         [1000,23,1000,1000,1],#random field only static match(port,time_dif)
         [1000,53,1000,1000,1000],
-	[600,53,1000,600,2],
-	[600,23,1000,600,3],
+	[600,53,54,600,2],
+	[600,23,24,600,3],
 
 	[101,103,104,51,1],#router to inside(if vm want to talk to internet riseup)
 	[101,103,104,55,1],
@@ -644,6 +645,8 @@ class SimpleSwitch13(app_manager.RyuApp):
                                 self.add_flow(datapath, 100, match, actions, inst)
 
                                 while(self.check):
+					global timestart
+					timestart=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())	
                                         self._alert_features(in_port,mac_table[in_port],prediction,3,6)
 					self._re_trainning(list_array,prediction[i:i+1],6)
 					self.check=False
@@ -942,6 +945,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 	
 				while(self.check):
+					global timestart
+                                        timestart=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
 					self._alert_features(in_port,mac_table[in_port],prediction,3,136)
 					self._re_trainning(list_array,prediction[i:i+1],136)
 					self.check=False
@@ -1014,7 +1020,9 @@ class SimpleSwitch13(app_manager.RyuApp):
 
 	def _monitor(self):
 		global ddos_buf
+
         	while True:
+			global timestart
 			self.check=True
             		print ('\n\n')
             		self.logger.info('----------table-------------------------------------')
@@ -1034,6 +1042,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 #			print JY+EN
 #			self._alert_features(1,2,3,4,"vm")					
             		print ('\n\n')
+			print timestart
             		hub.sleep(5)
 
 	def _timer(self):
@@ -1046,7 +1055,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 			hub.sleep(1)
 
 	def _re_trainning(self,feature_list,feature_type,pkt_type):
-#		hub.sleep(2)
+		hub.sleep()
 		global clf_na
 		global ckf_tcp
 		global ddos_buf
@@ -1138,7 +1147,7 @@ class SimpleSwitch13(app_manager.RyuApp):
             		return
         	dst = eth.dst
         	src = eth.src
-
+		srcip6 =""
         	dpid = datapath.id
         	self.mac_to_port.setdefault(dpid, {})
 
@@ -1179,7 +1188,7 @@ class SimpleSwitch13(app_manager.RyuApp):
 #			print pkt_ipv6
 	
 		pkt_tcp = pkt.get_protocol(tcp.tcp)
-		if pkt_tcp and pkt_tcp.bits==2:#Step 19
+		if pkt_tcp and pkt_tcp.bits==2 and co_check==True:#Step 19
 #		if pkt_tcp:
 #			print pkt_tcp
 			if srcip6==str_ipv6_tcp[21]:
